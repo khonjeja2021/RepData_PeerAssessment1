@@ -1,0 +1,216 @@
+---
+title: "CourseProject1"
+author: "James"
+date: "18/06/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+# Load packages 
+library(tidyverse)
+library(ggplot2)
+
+# Load dataset
+
+activity <- read.csv(".\\activity.csv")
+# StormData <- read.csv("repdata_data_StormData1.csv")
+
+# glimpse(activity)
+```
+
+
+```{r, echo=FALSE}
+
+activity <- read.csv(".\\activity.csv")
+
+
+#glimpse(activity)
+
+# Convert data column to date data type
+activity$date <- as.Date(activity$date)
+#glimpse(activity)
+
+
+
+df <- activity
+
+# summarise steps taken by date and interval
+
+df <- df %>% group_by(date, interval) %>% summarise(steps = sum(steps, na.rm = T))
+
+
+```
+
+## What is mean total number of steps taken per day?
+
+
+```{r, echo=FALSE}
+## Number of steps per day
+
+df_day <- df %>% group_by(date) %>% summarise(steps = sum(steps, na.rm = T))
+df_day_mean <- df %>% group_by(date) %>% summarise(steps = mean(steps, na.rm = T))
+
+#df_day
+df_day_mean
+
+```
+
+## Make a histogram of the total number of steps taken each day
+
+```{r echo=FALSE, fig.align='center', fig.height= 5, fig.width= 10}
+
+hist(df_day$steps)
+
+```
+
+## Calculate and report the mean and median of the total number of steps taken per day
+
+```{r echo=FALSE}
+
+df_mean_median <- df %>% group_by(date) %>% summarise(Mean_steps = mean(steps, na.rm = T),Median_steps = median(steps, na.rm = T))
+
+df_mean_median
+# 
+# 
+# mean_Steps <- mean(activity$steps[!is.na(activity$steps)])
+# mean_Steps
+# 
+# # summary(activity$steps[!is.na(activity$steps)])
+# median_Steps <- median(activity$steps[!is.na(activity$steps)])
+# median_Steps
+```
+
+
+## What is the average daily activity pattern?
+
+```{r echo=FALSE}
+
+# glimpse(activity)
+
+mean_Steps <- mean(df_day$steps)
+mean_Steps
+
+# 
+# Avg_daily <- activity %>% group_by(date, interval) %>% summarise(Steps = sum(steps, na.rm = T))
+# 
+# 
+# 
+# plot(Avg_daily$interval, steps, type = "l")
+
+```
+
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r echo=FALSE}
+
+# glimpse(activity)
+df_Interval <- df %>% group_by(interval) %>% summarise(total = steps) %>% arrange(-total)
+
+Max <- max(df_Interval$total)
+Max_Interval <- df_Interval$interval[df_Interval$total==max(df_Interval$total)]
+
+Max
+Max_Interval
+
+```
+
+5 minute interval number with maximum number `r Max`  is interval number `r Max_Interval`
+
+## Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with 
+
+```{r echo=FALSE}
+missingData <- sum(is.na(activity$steps))
+missingData
+```
+
+There are a total of `r missingData` missing data in activity dataset
+
+
+
+## Devise a strategy for filling in all of the missing values in the dataset.
+
+```{r echo=FALSE}
+
+activity_cleaned <- activity
+activity_cleaned[is.na(activity_cleaned$steps), "steps"] <- mean_Steps 
+
+```
+
+## Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day.
+
+```{r echo=FALSE}
+
+hist(activity_cleaned$steps)
+```
+
+
+```{r echo=FALSE}
+mean_Steps_clean <- mean(activity_cleaned$steps[!is.na(activity_cleaned$steps)])
+#mean_Steps_clean
+
+# summary(activity_cleaned$steps[!is.na(activity_cleaned$steps)])
+median_Steps_clean <- median(activity_cleaned$steps[!is.na(activity_cleaned$steps)])
+#median_Steps_clean
+
+paste("Mean   = ", as.character(round(mean_Steps_clean),0), sep = "")
+paste("Median = ", as.character(round(median_Steps_clean),0), sep = "")
+
+```
+
+This shows imputing missing data using mean does not affect the median total daily number of steps but the mean value.
+
+
+## Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+
+```{r echo=FALSE}
+
+# head(df)
+
+activity_updated <- activity %>% 
+  select(date, interval, steps) %>% 
+  mutate(weekday = weekdays(activity$date, abbreviate = T)) %>% 
+  mutate(weekday1 = 
+           case_when(    
+              weekday == "Mon" ~ "weekday",
+              weekday == "Tue" ~ "weekday",
+              weekday == "Wed" ~ "weekday",
+              weekday == "Thu" ~ "weekday",
+              weekday == "Fri" ~ "weekday",
+              TRUE ~ "weekend")) %>% 
+  mutate(weekday1 = as.factor(weekday1))
+
+#head(activity_updated)
+```
+
+## Make a panel plot containing a time series plot of the 5-minute interval (x-axis)
+
+```{r echo=FALSE}
+
+#plot(wt,disp, main="Scatterplot of wt vs disp")
+
+activity_updated1 <- activity_updated %>% group_by(interval, weekday1) %>% summarise(mean_step = mean(steps, na.rm = T))
+
+activity_updated1 %>% ggplot(aes(interval, mean_step)) +
+  geom_line() +
+  facet_grid(weekday1 ~.)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
